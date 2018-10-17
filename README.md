@@ -1,2 +1,3 @@
 # PlatformATC
-Macros and info for the Platform CNC ATC upgrade
+Macros and setup info for the Platform CNC ATC upgrade
+
