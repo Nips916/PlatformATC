@@ -9,3 +9,5 @@ The spindle I'll be using for this is the JGL80 2.2kw spindle.  It will be hooke
 I did find a setting in the Mach setup that had to do with the ATC, i'll post a picture of the setting you need to change, otherwise you will go nuts trying to figure out why the tool number is never correct.
 
 My machines tool pockets will start at machine X29 and count from right to left.
+
+Tool tables should be created for the tools in mach4 with correct offsets.  I may add a probing routine to auto update the offsets.  I believe your Z is adjust automatically after the tool change using your tool table heights offsets.  Ill verify that later.
