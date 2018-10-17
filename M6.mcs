@@ -15,46 +15,60 @@ function m6()
 	local colletReleaseZ = -1 --Z just above drawbar
 	local spindlestopTime = 2000 --Delay in MS for spindle to stop.  Should be the same for your VFD Spin up/down
 	local sigh = mc.mcSignalGetHandle(inst, mc.OSIG_SPINDLEON)
-	local sigState = mc.mcSignalGetState(sigh)	
+	local sigState = mc.mcSignalGetState(sigh)
+	local homeCheck = 0
+	local Xhomed,rc=mc.mcAxisIsHomed(inst,mc.X_AXIS)
+	local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS)
+	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
 	
-	if selectedTool == currentTool then
-		mc.mcCntlSetLastError(inst, "Current tool == Selected tool so there is nothing to do")
-		return
-	end
+	if Xhomed==1 then homeCheck=homeCheck+1 end;
+	if Yhomed==1 then homeCheck=homeCheck+1 end;
+	if Zhomed==1 then homeCheck=homeCheck+1 end;
+	
+	if (homeCheck)==3 then
+    	
+		if selectedTool == currentTool then
+			mc.mcCntlSetLastError(inst, "Current tool == Selected tool so there is nothing to do")
+			return
+		end
   
-	if (sigState == 1) then --Check for running spindle.  Some post processors dont add M5 by default 
-		mc.mcSpindleSetDirection(inst, 0);
-		mc.mcCntlGcodeExecuteWait(inst, "G4 P"..spindlestopTime) -- Pause for spindle to stop
-	end
+		if (sigState == 1) then --Check for running spindle.  Some post processors dont add M5 by default 
+			mc.mcSpindleSetDirection(inst, 0);
+			mc.mcCntlGcodeExecuteWait(inst, "G4 P"..spindlestopTime) -- Pause for spindle to stop
+		end
   
-	mc.mcCntlSetLastError(inst, "Putting tool "..tostring(currentTool).." away") --Message at beginning of tool change
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
-	mc.mcCntlSetLastError(inst, "Rapid to tool storage "..tostring(currentTool))
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolcurrentX.." Y"..toolHolderSafeY)--Rapid to current tool holder X and Safe Y
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..toolZOffset)--Rapid to current tool holder Z Height
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolY.." F50")--Feed in to current tool holder pocket
+		mc.mcCntlSetLastError(inst, "Putting tool "..tostring(currentTool).." away") --Message at beginning of tool change
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
+		mc.mcCntlSetLastError(inst, "Rapid to tool storage "..tostring(currentTool))
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolcurrentX.." Y"..toolHolderSafeY)--Rapid to current tool holder X and Safe Y
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..toolZOffset)--Rapid to current tool holder Z Height
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolY.." F50")--Feed in to current tool holder pocket
 		--OpenCollet Mcode 
 		--OpenFlush Mcode
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..colletReleaseZ.." F25")--Raise off drawbar
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home after release
-	mc.mcCntlSetLastError(inst, "Tool number "..tostring(currentTool).." stored")
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolselectedX.." Y"..toolY)--Rapid to selected tool holder location
-	mc.mcCntlSetLastError(inst, "Changing to tool  "..tostring(selectedTool))
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..colletReleaseZ)--Rapid to selected tool holder Z Height
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..toolZOffset.." F25")--Lower onto drawbar
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..colletReleaseZ.." F25")--Raise off drawbar
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home after release
+		mc.mcCntlSetLastError(inst, "Tool number "..tostring(currentTool).." stored")
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolselectedX.." Y"..toolY)--Rapid to selected tool holder location
+		mc.mcCntlSetLastError(inst, "Changing to tool  "..tostring(selectedTool))
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..colletReleaseZ)--Rapid to selected tool holder Z Height
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..toolZOffset.." F25")--Lower onto drawbar
 		--CloseCollet Mcode
 		--CloseFlush Mcode
 		--OpenRelease Mcode - possible addition of value passthrough of time in seconds to apply pressure
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
-	mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0")--Rapid Z machine home after Picking up new tool
-	mc.mcToolSetCurrent(inst, selectedTool) --Update Mach to correct tool
-	currentTool = selectedTool
-	mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0")--Rapid Z machine home after Picking up new tool
+		mc.mcToolSetCurrent(inst, selectedTool) --Update Mach to correct tool
+		currentTool = selectedTool
+		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
 		--Add updating of Z from tool table
-	mc.mcCntlGcodeExecuteWait(inst, "G4 P3000") -- Pause for spindle release to complete.  Should be fine tuned otherwise spindle meltdown will occure
-	mc.mcCntlSetLastError(inst, "Tool change complete!")
+		mc.mcCntlGcodeExecuteWait(inst, "G4 P3000") -- Pause for spindle release to complete.  Should be fine tuned otherwise spindle meltdown will occure
+		mc.mcCntlSetLastError(inst, "Tool change complete!")
+	else
+	mc.mcCntlSetLastError(inst, "ATC Failed - HOME MACHINE FIRST")
+	return
+	
 end
-
+end
 if (mc.mcInEditor() == 1) then
 	m6()
 end
