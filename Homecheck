@@ -1,0 +1,26 @@
+function GoCenter();
+local inst=mc.mcGetInstance();
+local Xhand=mc.mcRegGetHandle(inst,'iRegs0/Xcenter');
+local Xcenter=mc.mcRegGetValue(Xhand);
+local Yhand=mc.mcRegGetHandle(inst,'iRegs0/Ycenter');
+local Ycenter=mc.mcRegGetValue(Yhand);
+local Zhand=mc.mcRegGetHandle(inst,'iRegs0/Zcenter');
+local Zcenter=mc.mcRegGetValue(Zhand);
+local homed=0;
+local enabled=0;
+if (mc.mcAxisIsEnabled(inst,mc.X_AXIS)==1) then enabled=enabled+1 end;
+if (mc.mcAxisIsEnabled(inst,mc.Y_AXIS)==1) then enabled=enabled+1 end;
+if (mc.mcAxisIsEnabled(inst,mc.Z_AXIS)==1) then enabled=enabled+1 end;
+local Xhomed,rc=mc.mcAxisIsHomed(inst,mc.X_AXIS);
+local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS);
+local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS);
+if Xhomed==1 then homed=homed+1 end;
+if Yhomed==1 then homed=homed+1 end;
+if Zhomed==1 then homed=homed+1 end;
+if (homed+enabled)==6 then
+    mc.mcCntlGcodeExecuteWait(inst,"g53 g0 z"..Zcenter.."\n g53 g0 x"..Xcenter.."y"..Ycenter)
+end
+end
+if (mc.mcInEditor() == 1) then
+    GoCenter()
+end
