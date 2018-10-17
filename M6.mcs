@@ -20,6 +20,7 @@ function m6()
 	local Xhomed,rc=mc.mcAxisIsHomed(inst,mc.X_AXIS)
 	local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS)
 	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
+	local out1= mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) --ATC collet release Output
 	
 	if Xhomed==1 then homeCheck=homeCheck+1 end;
 	if Yhomed==1 then homeCheck=homeCheck+1 end;
@@ -43,6 +44,7 @@ function m6()
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolcurrentX.." Y"..toolHolderSafeY)--Rapid to current tool holder X and Safe Y
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..toolZOffset)--Rapid to current tool holder Z Height
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolY.." F50")--Feed in to current tool holder pocket
+		mc.mcSignalSetState(out1, true) --Open Collet and cleaning valve
 		--OpenCollet Mcode 
 		--OpenFlush Mcode
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..colletReleaseZ.." F25")--Raise off drawbar
@@ -54,6 +56,7 @@ function m6()
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..toolZOffset.." F25")--Lower onto drawbar
 		--CloseCollet Mcode
 		--CloseFlush Mcode
+		mc.mcSignalSetState(out1, false)
 		--OpenRelease Mcode - possible addition of value passthrough of time in seconds to apply pressure
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0")--Rapid Z machine home after Picking up new tool
