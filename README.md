@@ -11,3 +11,16 @@ I did find a setting in the Mach setup that had to do with the ATC, i'll post a 
 My machines tool pockets will start at machine X29 and count from right to left.
 
 Tool tables should be created for the tools in mach4 with correct offsets.  I may add a probing routine to auto update the offsets.  I believe your Z is adjust automatically after the tool change using your tool table heights offsets.  Ill verify that later.
+
+
+
+
+
+Notes for me:
+
+Tool offsets are odd.  Tool 1 is your master tool - its offset should be 0.000 in your tool offsets table.
+Every other tool offset is measured by the offset to this master tool.  Use the offsets tab to set tool height with a probe (or shim) for each subsequent tool.
+
+Break tool one?  Redo all the offsets.  Break any other, just re-touchoff that tool to reset the offset.  I will make a macro for setting all tools one by one for simplicity, but that will come later.
+
+Also, make sure you have "Toggle Height offsets" in the offsets tab set to ON.  Tool changes should be M6 T1 + G43 H1 for setting the offset.
