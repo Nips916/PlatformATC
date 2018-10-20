@@ -61,6 +61,7 @@ function m6()
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0")--Rapid Z machine home after Picking up new tool
 		mc.mcToolSetCurrent(inst, selectedTool) --Update Mach to correct tool
+		mc.mcCntlGcodeExecute(inst, "G43 H"..selectedTool)--Updates Tool offset to current tool - some post processors dont do this automatically and mach4 wont either
 		currentTool = selectedTool
 		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
 		--Add updating of Z from tool table
