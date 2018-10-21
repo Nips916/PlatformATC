@@ -1,0 +1,24 @@
+function m100()
+
+	local inst, hSig, rc
+	inst = mc.mcGetInstance()
+	
+	hSig, rc = mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) -- Get handle for output 1
+	if (rc~= 0) then --Check our errors
+		mc.mcCntlSetLastError(inst, (mcErrorCheck[rc]))
+                --wx.wxMessageBox(mcErrorCheck[rc]) --popup a message box with the error
+	end
+	
+	rc = mc.mcSignalSetState(hSig, 1) --turn on output 1
+	if (rc~= 0) then --Check our errors
+		mc.mcCntlSetLastError(inst, (mcErrorCheck[rc]))
+	end
+	
+	rc = mc.mcSignalWait(inst, mc.ISIG_INPUT21, 1, 5) --Wait 5 seconds for input 21 to become active
+	if (rc~= 0) then mc.mcCntlSetLastError(inst, (mcErrorCheck[rc])) end --In line check our errors works too
+	
+end
+
+if (mc.mcInEditor() == 1) then
+    m100()
+end
