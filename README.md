@@ -30,6 +30,7 @@ Need to add automated dust shoe up and down.  Use 3d printer linear bearing and 
 
 use homeing offsets to set machine 0 infront of tool pockets so no accidents happen when the machine rapids home after some toolpaths.  I set mine to -1 on the Y and the tool pocket centers are at -.5 on center.
 
-Need to add safty charge pump to c10 board.  After closing mach with machine on the all actuators turn on which would not be good.  Tools will fall out of the collet on mach crashing
+Need to add safty charge pump to c10 board.  After closing mach with machine on the all actuators turn on which would not be good.  Tools will fall out of the collet on mach crashing - Set pulldown resistors on board?
+
 
 Need to add a tool 0 for having an empty spindle.
