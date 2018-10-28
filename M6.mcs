@@ -3,16 +3,16 @@ function m6()
 	local inst = mc.mcGetInstance()
 	local selectedTool = mc.mcToolGetSelected(inst)
 	local currentTool = mc.mcToolGetCurrent(inst)
-	local toolXOffset = -2 --Inches Between tool holders - Right to Left
-	local toolZOffset = -1.5 --Distance from machine Z home to fork pockets - Can be fine tuned - NEGATIVE DIRECTION
-	local toolY = 1 --Machine Y of tool holder center - MACHINE LOCATION
-	local toolZeroX = 31 --add one extra toolXOffset for tool zero which is never used. Tool 1 Actual is 29 in X on my machine
-	local toolHolderSafeY = 2 --Safe Machine Y in front of forks
+	local toolXOffset = -3 --Inches Between tool holders - Right to Left
+	local toolZOffset = -2.74 --Distance from machine Z home to fork pockets - Can be fine tuned - NEGATIVE DIRECTION
+	local toolY = -0.588 --Machine Y of tool holder center - MACHINE LOCATION
+	local toolZeroX = 32 --add one extra toolXOffset for tool zero which is never used. Tool 1 Actual is 29 in X on my machine
+	local toolHolderSafeY = 0.75 --Safe Machine Y in front of forks
 	local toolselectedXOffset = selectedTool * toolXOffset --Pocket number x Fork Offsets will align for the selected tool number
 	local toolcurrentXOffset = currentTool * toolXOffset --Same but for current tool number
 	local toolcurrentX = toolcurrentXOffset + toolZeroX  -- Actual machine location of pocket in the X for current tool
 	local toolselectedX = toolselectedXOffset + toolZeroX --Same but for selected tool
-	local colletReleaseZ = -1 --Z just above drawbar
+	local colletReleaseZ = -2.6 --Z just above drawbar
 	local spindlestopTime = 2000 --Delay in MS for spindle to stop.  Should be the same for your VFD Spin up/down
 	local sigh = mc.mcSignalGetHandle(inst, mc.OSIG_SPINDLEON)
 	local sigState = mc.mcSignalGetState(sigh)
@@ -21,6 +21,8 @@ function m6()
 	local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS)
 	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
 	local out1= mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) --ATC collet release Output
+
+	
 	
 	if Xhomed==1 then homeCheck=homeCheck+1 end;
 	if Yhomed==1 then homeCheck=homeCheck+1 end;
@@ -43,10 +45,20 @@ function m6()
 		mc.mcCntlSetLastError(inst, "Rapid to tool storage "..tostring(currentTool))
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 X"..toolcurrentX.." Y"..toolHolderSafeY)--Rapid to current tool holder X and Safe Y
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..toolZOffset)--Rapid to current tool holder Z Height
-		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolY.." F50")--Feed in to current tool holder pocket
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolY.." F100")--Feed in to current tool holder pocket
 		mc.mcSignalSetState(out1, true) --Open Collet and cleaning valve
-		--OpenCollet Mcode 
-		--OpenFlush Mcode
+		
+		local colletOpened = mc.mcSignalWait(inst,mc.ISIG_INPUT2,mc.WAIT_MODE_HIGH,3.0);
+		
+		if (colletOpened==mc.MERROR_TIMED_OUT) then 
+			mc.mcCntlSetLastError(inst,"Collet failed to open - Error: Check Air Pressure");
+			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
+			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
+			mc.mcSignalSetState(out1, false) --turn off valve relay
+			mc.mcCntlEStop(inst)
+			return
+		end
+		
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..colletReleaseZ.." F25")--Raise off drawbar
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home after release
 		mc.mcCntlSetLastError(inst, "Tool number "..tostring(currentTool).." stored")
@@ -54,17 +66,24 @@ function m6()
 		mc.mcCntlSetLastError(inst, "Changing to tool  "..tostring(selectedTool))
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z"..colletReleaseZ)--Rapid to selected tool holder Z Height
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Z"..toolZOffset.." F25")--Lower onto drawbar
-		--CloseCollet Mcode
-		--CloseFlush Mcode
 		mc.mcSignalSetState(out1, false)
-		--OpenRelease Mcode - possible addition of value passthrough of time in seconds to apply pressure
-		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
+		
+		local colletClosed = mc.mcSignalWait(inst,mc.ISIG_INPUT1,mc.WAIT_MODE_HIGH,3.0);
+		
+		if (colletclosed==mc.MERROR_TIMED_OUT) then 
+			mc.mcCntlSetLastError(inst,"Collet failed to open - Error: Check Air Pressure");
+			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
+			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
+			mc.mcCntlEStop(inst)
+			return
+		end
+		
+		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F100")--Feed out of fork Location
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0")--Rapid Z machine home after Picking up new tool
 		mc.mcToolSetCurrent(inst, selectedTool) --Update Mach to correct tool
 		mc.mcCntlGcodeExecute(inst, "G43 H"..selectedTool)--Updates Tool offset to current tool - some post processors dont do this automatically and mach4 wont either
 		currentTool = selectedTool
 		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
-		--Add updating of Z from tool table
 		mc.mcCntlGcodeExecuteWait(inst, "G4 P3000") -- Pause for spindle release to complete.  Should be fine tuned otherwise spindle meltdown will occure
 		mc.mcCntlSetLastError(inst, "Tool change complete!")
 	else
