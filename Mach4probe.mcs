@@ -1,0 +1,47 @@
+function m6()
+    
+local inst = mc.mcGetInstance()
+
+----------------------------------------------------------------------------------
+--change lines here to either auto rapid, or manually jog to a tool change position
+----------------------------------------------------------------------------------
+--Manual Lines. Uncomment line below to allow you to manually jog to a tool change position. 
+--local MyChoice = wx.wxMessageBox("Click OK, \nThen Jog to A Safe Tool Change Position,\nInsert New tool,\nThen Click Cycle Start.","Click OK to continue" , 16)
+---------------------------------------------------------------------------------
+--Auto Lines.  Uncomment both lines below (and comment out local MyChoice line above) to automatically move to tool change position. 
+--Edit to include the machine coordinate values of that tool change position.
+
+--AUTO LINES
+--mc.mcCntlGcodeExecuteWait(inst, "G53 G0 Z0\nG53 G0 X14.7148 Y-22.713")--Move the Z to Home.Then to the X, Y Coords for our touch pad.
+--mc.mcCntlSetLastError(inst, 'Now in Tool Change Position. Hit Cycle Start!')
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+local posmode = mc.mcCntlGetPoundVar(inst, mc.SV_MOD_GROUP_3) --get the current mode so we can return to it when macro ends
+local selectedtool = mc.mcToolGetSelected(inst)
+local currenttool = mc.mcToolGetCurrent(inst)
+    
+ if selectedtool == currenttool then
+        mc.mcCntlSetLastError(inst, "Current tool == Selected tool so there is nothing to do")
+ else
+        mc.mcCntlToolChangeManual(inst, true);
+  mc.mcCntlSetLastError(inst, "Current tool == " .. tostring(selectedtool) .. "   Previous Tool == " .. tostring(currenttool))
+  mc.mcToolSetCurrent(inst, selectedtool)
+
+local MyChoice = wx.wxMessageBox("Click Ok to Begin Probing the New Tool","Click OK to continue" , 16)
+        mc.mcCntlSetLastError(inst, "Probing in Progress!")
+        mc.mcCntlGcodeExecuteWait(inst, " G91 G31 Z-5. F5.")--probe the new tool
+local probedz = mc.mcCntlGetPoundVar(inst, mc.SV_PROBE_POS_Z) -- Z Probe position in Machine coords
+        mc.mcCntlGcodeExecute(inst, string.format('G ' .. posmode))--return to pre macro mode G90, or G91
+  mc.mcCntlGcodeExecuteWait(inst, "G00 G53 Z0 ")--Retract 
+  
+local NewOffset = probedz
+  mc.mcToolSetData(inst, mc.MTOOL_MILL_HEIGHT, selectedtool, NewOffset)
+  mc.mcCntlSetLastError(inst, string.format("Auto tool setting complete, Offset = %.4f", NewOffset))
+wx.wxMessageBox("Toolchange Complete.\nTLO Set")
+        end
+
+end
+
+if (mc.mcInEditor() == 1) then
+ m6()
+end
