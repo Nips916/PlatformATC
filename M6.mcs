@@ -21,7 +21,8 @@ function m6()
 	local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS)
 	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
 	local out1= mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) --ATC collet release Output
-
+	local dustShoe, rc = mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT2)
+	local shoeState, rc = mc.mcSignalGetState(dustShoe)
 	
 	
 	if Xhomed==1 then homeCheck=homeCheck+1 end;
@@ -39,7 +40,11 @@ function m6()
 			mc.mcSpindleSetDirection(inst, 0);
 			mc.mcCntlGcodeExecuteWait(inst, "G4 P"..spindlestopTime) -- Pause for spindle to stop
 		end
-  
+		
+		if shoeState == 1 then
+			mc.mcSignalSetState(dustShoe, 0) --If its down, raise dust boot for changeout
+		end
+		
 		mc.mcCntlSetLastError(inst, "Putting tool "..tostring(currentTool).." away") --Message at beginning of tool change
 		mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
 		mc.mcCntlSetLastError(inst, "Rapid to tool storage "..tostring(currentTool))
@@ -50,7 +55,7 @@ function m6()
 		
 		local colletOpened = mc.mcSignalWait(inst,mc.ISIG_INPUT2,mc.WAIT_MODE_HIGH,2.0);
 		
-		if (colletOpened==mc.MERROR_TIMED_OUT) then 
+		if (colletOpened == mc.MERROR_TIMED_OUT) then 
 			mc.mcCntlSetLastError(inst,"Collet failed to open - Error: Check Air Pressure");
 			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
 			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
@@ -70,7 +75,7 @@ function m6()
 		
 		local colletClosed = mc.mcSignalWait(inst,mc.ISIG_INPUT1,mc.WAIT_MODE_HIGH,2.0);
 		
-		if (colletclosed==mc.MERROR_TIMED_OUT) then 
+		if (colletclosed == mc.MERROR_TIMED_OUT) then 
 			mc.mcCntlSetLastError(inst,"Collet failed to open - Error: Check Air Pressure");
 			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G01 Y"..toolHolderSafeY.." F50")--Feed out of fork Location
 			mc.mcCntlGcodeExecuteWait(inst, "G90 G53 G0 Z0.0");--Rapid Z machine home
@@ -84,8 +89,15 @@ function m6()
 		mc.mcCntlGcodeExecute(inst, "G43 H"..selectedTool)--Updates Tool offset to current tool - some post processors dont do this automatically and mach4 wont either
 		currentTool = selectedTool
 		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
+		
+		if shoeState == 0 then
+			mc.mcSignalSetState(dustShoe, 1) --If its up, lower dust boot for changeout
+		end
+		
 		mc.mcCntlGcodeExecuteWait(inst, "G4 P3000") -- Pause for spindle release to complete.  Should be fine tuned otherwise spindle meltdown will occure
 		mc.mcCntlSetLastError(inst, "Tool change complete!")
+		
+		
 	else
 	mc.mcCntlSetLastError(inst, "ATC Failed - HOME MACHINE FIRST")
 	return
