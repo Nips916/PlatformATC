@@ -22,7 +22,6 @@ function m6()
 	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
 	local out1= mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) --ATC collet release Output
 	local dustShoe, rc = mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT2)
-	local shoeState, rc = mc.mcSignalGetState(dustShoe)
 	
 	
 	if Xhomed==1 then homeCheck=homeCheck+1 end;
@@ -40,6 +39,8 @@ function m6()
 			mc.mcSpindleSetDirection(inst, 0);
 			mc.mcCntlGcodeExecuteWait(inst, "G4 P"..spindlestopTime) -- Pause for spindle to stop
 		end
+		
+		local shoeState, rc = mc.mcSignalGetState(dustShoe)
 		
 		if shoeState == 1 then
 			mc.mcSignalSetState(dustShoe, 0) --If its down, raise dust boot for changeout
@@ -90,6 +91,8 @@ function m6()
 		currentTool = selectedTool
 		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
 		
+		local shoeState, rc = mc.mcSignalGetState(dustShoe)
+		
 		if shoeState == 0 then
 			mc.mcSignalSetState(dustShoe, 1) --If its up, lower dust boot for changeout
 		end
@@ -104,6 +107,7 @@ function m6()
 	
 end
 end
+
 if (mc.mcInEditor() == 1) then
 	m6()
 end
