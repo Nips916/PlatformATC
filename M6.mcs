@@ -17,12 +17,13 @@ function m6()
 	local sigh = mc.mcSignalGetHandle(inst, mc.OSIG_SPINDLEON)
 	local sigState = mc.mcSignalGetState(sigh)
 	local homeCheck = 0
-	local Xhomed,rc=mc.mcAxisIsHomed(inst,mc.X_AXIS)
-	local Yhomed,rc=mc.mcAxisIsHomed(inst,mc.Y_AXIS)
-	local Zhomed,rc=mc.mcAxisIsHomed(inst,mc.Z_AXIS)
+	local Xhomed,rc = mc.mcAxisIsHomed(inst,mc.X_AXIS)
+	local Yhomed,rc = mc.mcAxisIsHomed(inst,mc.Y_AXIS)
+	local Zhomed,rc = mc.mcAxisIsHomed(inst,mc.Z_AXIS)
 	local out1= mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT1) --ATC collet release Output
 	local dustShoe, rc = mc.mcSignalGetHandle(inst, mc.OSIG_OUTPUT2)
-	
+	local hreg = mc.mcRegGetHandle(inst, "iRegs0/ATCHOOD")
+	local ATCHOOD = mc.mcRegGetValue(hreg)
 	
 	if Xhomed==1 then homeCheck=homeCheck+1 end;
 	if Yhomed==1 then homeCheck=homeCheck+1 end;
@@ -91,9 +92,9 @@ function m6()
 		currentTool = selectedTool
 		mc.mcCntlSetLastError(inst, "Current tool number "..tostring(currentTool))
 		
-		local shoeState, rc = mc.mcSignalGetState(dustShoe)
 		
-		if shoeState == 0 then
+		
+		if ATCHOOD == 1 then
 			mc.mcSignalSetState(dustShoe, 1) --If its up, lower dust boot for changeout
 		end
 		
